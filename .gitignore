@@ -1,0 +1,8 @@
+temp/
+output/
+logs/
+uploads/
+backup/
+.htpasswd
+secret_config.php
+secret_config.php
