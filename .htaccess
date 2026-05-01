@@ -1,0 +1,12 @@
+php_value error_reporting 1
+php_value log_errors 1
+php_value error_log /home/klient.dhosting.pl/laudaaudio/tools.laudacentral.eu/public_html/test/PHP_errors.log
+
+AuthType Basic
+AuthName "Password Protected Area"
+AuthUserFile .htpasswd
+Require valid-user
+
+<FilesMatch "\.(php)$">
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+</FilesMatch>

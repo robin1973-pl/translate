@@ -1,0 +1,13 @@
+secret_config.php
+users.db
+uploads/
+temp/
+output/
+translations/
+logs/
+*.idml
+*.zip
+*.docx
+*.pptx
+.DS_Store
+php_errors.log
