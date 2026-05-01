@@ -3,7 +3,6 @@ include 'auth.php';
 $config = require 'config.php';
 $strings = require 'helpers/ui_strings.php';
 
-// Możesz tu dodać wybór języka w przyszłości, teraz domyślnie PL
 $ui_lang = 'pl';
 $ui = $strings[$ui_lang]['index'];
 $username = $_SESSION['username'] ?? 'User';
@@ -20,6 +19,7 @@ $username = $_SESSION['username'] ?? 'User';
         :root {
             --bg-deep: #081425;
             --accent: #06B6D4;
+            --accent-office: #10b981;
             --accent-glow: rgba(6, 182, 212, 0.2);
             --glass: rgba(15, 23, 42, 0.6);
             --glass-border: rgba(255, 255, 255, 0.08);
@@ -28,7 +28,6 @@ $username = $_SESSION['username'] ?? 'User';
         }
         body { 
             background: #081425;
-            background-attachment: fixed;
             min-height: 100vh;
             font-family: 'Inter', sans-serif;
             color: var(--text-main);
@@ -36,7 +35,6 @@ $username = $_SESSION['username'] ?? 'User';
             display: flex;
             flex-direction: column;
         }
-        /* Dashboard Layout */
         .header {
             display: flex;
             justify-content: space-between;
@@ -49,73 +47,79 @@ $username = $_SESSION['username'] ?? 'User';
             top: 0;
             z-index: 100;
         }
-        .logo {
-            font-size: 1.25rem;
-            font-weight: 700;
-            letter-spacing: -1px;
-            color: white;
-            text-decoration: none;
-        }
+        .logo { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
         .logo span { color: var(--accent); }
 
-        .user-nav {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .user-nav span { font-size: 0.9rem; font-weight: 500; }
-        .btn-logout {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.3s;
-        }
+        .user-nav { display: flex; align-items: center; gap: 1.5rem; }
+        .btn-logout { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; }
         .btn-logout:hover { color: #f87171; }
 
         .main-content {
             flex: 1;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 4rem 2rem;
+            padding: 3rem 2rem;
         }
 
-        .upload-container {
+        .title-hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .title-hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -1px; }
+        .title-hero p { color: var(--text-dim); font-size: 1.1rem; }
+
+        .cards-container {
+            display: flex;
+            gap: 2rem;
             width: 100%;
-            max-width: 600px;
+            max-width: 1100px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .card {
+            flex: 1;
+            min-width: 340px;
+            max-width: 500px;
             background: var(--glass);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
-            padding: 3rem;
-            text-align: center;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
         }
+        .card:hover { transform: translateY(-5px); }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+        .card-idml .card-title i { color: var(--accent); }
+        .card-office .card-title i { color: var(--accent-office); }
 
         .drop-zone {
             border: 2px dashed var(--glass-border);
             border-radius: 16px;
-            padding: 3rem 2rem;
-            margin-bottom: 2rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
             transition: all 0.3s ease;
             cursor: pointer;
-            position: relative;
+            text-align: center;
         }
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--accent);
-            background: rgba(6, 182, 212, 0.05);
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-        .drop-zone i {
-            font-size: 3rem;
-            color: var(--accent);
-            margin-bottom: 1rem;
-            display: block;
-        }
-        .drop-zone p { margin: 0; font-weight: 500; }
-        .drop-zone span { font-size: 0.85rem; color: var(--text-dim); margin-top: 0.5rem; display: block; }
-        
-        #file-input { display: none; }
+        .card-idml .drop-zone:hover { border-color: var(--accent); background: rgba(6, 182, 212, 0.05); }
+        .card-office .drop-zone:hover { border-color: var(--accent-office); background: rgba(16, 185, 129, 0.05); }
+
+        .drop-zone i { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+        .card-idml .drop-zone i { color: var(--accent); }
+        .card-office .drop-zone i { color: var(--accent-office); }
 
         .form-select {
             width: 100%;
@@ -123,66 +127,48 @@ $username = $_SESSION['username'] ?? 'User';
             border: 1px solid var(--glass-border);
             color: white;
             border-radius: 12px;
-            padding: 1rem;
-            font-size: 1rem;
-            margin-bottom: 2rem;
+            padding: 0.85rem;
+            margin-bottom: 1.5rem;
             cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1rem;
-        }
-        .form-select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 10px var(--accent-glow);
         }
 
         .btn-submit {
             width: 100%;
-            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
-            color: white;
             border: none;
             border-radius: 12px;
-            padding: 1.25rem;
-            font-size: 1.1rem;
+            padding: 1rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.4);
+            color: white;
         }
-        .btn-submit:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px -5px rgba(6, 182, 212, 0.6);
+        .card-idml .btn-submit { 
+            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+            box-shadow: 0 10px 20px -5px rgba(6, 182, 212, 0.4);
         }
-        .btn-submit:active { transform: translateY(0); }
-
-        .file-info {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: var(--accent);
-            font-weight: 600;
-            display: none;
+        .card-office .btn-submit { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
         }
 
-        /* Ambient background glow */
+        .file-info { font-size: 0.8rem; color: var(--accent); margin-top: 0.5rem; display: none; }
+        .card-office .file-info { color: var(--accent-office); }
+
         .ambient-bg {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 800px;
-            height: 800px;
-            background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, transparent 70%);
+            width: 1000px;
+            height: 1000px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
             z-index: -1;
-            pointer-events: none;
         }
     </style>
 </head>
 <body>
     <div class="ambient-bg"></div>
-    
     <header class="header">
         <a href="index.php" class="logo">IDML<span>Translator</span></a>
         <div class="user-nav">
@@ -192,70 +178,72 @@ $username = $_SESSION['username'] ?? 'User';
     </header>
 
     <main class="main-content">
-        <div class="upload-container">
-            <h2 style="margin-top: 0; font-size: 1.5rem; letter-spacing: -0.5px;"><?= $ui['upload_title'] ?></h2>
-            
-            <form action="extract_idml.php" method="POST" enctype="multipart/form-data" id="upload-form">
-                <div class="drop-zone" id="drop-zone">
-                    <i class="fa-solid fa-file-arrow-up"></i>
-                    <p><?= $ui['upload_hint'] ?></p>
-                    <span>Obsługiwane formaty: .idml, .zip</span>
-                    <input type="file" name="idml" id="file-input" accept=".idml,.zip" required>
-                    <div id="file-name" class="file-info"></div>
-                </div>
+        <div class="title-hero">
+            <h1>Multi-Format Translator</h1>
+            <p>Przetłumacz swoje projekty z zachowaniem stylów i formatowania.</p>
+        </div>
 
-                <div style="text-align: left; margin-bottom: 0.5rem;">
-                    <label class="form-label" style="font-size: 0.75rem; color: var(--text-dim); font-weight: 600; letter-spacing: 1px;"><?= strtoupper($ui['target_lang']) ?></label>
-                </div>
-                <select name="lang" id="lang" class="form-select">
-                    <option value="cs" selected>Czeski (Czech)</option>
-                    <option value="de">Niemiecki (German)</option>
-                    <option value="sk">Słowacki (Slovak)</option>
-                    <option value="hu">Węgierski (Hungarian)</option>
-                    <option value="es">Hiszpański (Spanish)</option>
-                    <option value="fr">Francuski (French)</option>
-                    <option value="it">Włoski (Italian)</option>
-                    <option value="pt">Portugalski (Portuguese)</option>
-                    <option value="nl">Holenderski (Dutch)</option>
-                    <option value="pl">Polski (Polish)</option>
-                    <option value="en">Angielski (English)</option>
-                </select>
+        <div class="cards-container">
+            <!-- IDML Card -->
+            <div class="card card-idml">
+                <div class="card-title"><i class="fa-solid fa-layer-group"></i> InDesign (IDML)</div>
+                <form action="extract_idml.php" method="POST" enctype="multipart/form-data">
+                    <div class="drop-zone" onclick="document.getElementById('idml-input').click()">
+                        <i class="fa-solid fa-file-zipper"></i>
+                        <p><?= $ui['upload_title'] ?></p>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">Wybierz plik .idml (ZIP)</span>
+                        <input type="file" name="idml" id="idml-input" accept=".idml,.zip" style="display:none" onchange="updateLabel(this, 'idml-label')" required>
+                        <div id="idml-label" class="file-info"></div>
+                    </div>
+                    <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; display: block; font-weight: 600;">JĘZYK DOCELOWY</label>
+                    <select name="lang" class="form-select">
+                        <option value="cs" selected>Czeski</option>
+                        <option value="de">Niemiecki</option>
+                        <option value="sk">Słowacki</option>
+                        <option value="hu">Węgierski</option>
+                        <option value="es">Hiszpański</option>
+                        <option value="fr">Francuski</option>
+                        <option value="it">Włoski</option>
+                        <option value="pl">Polski</option>
+                    </select>
+                    <button type="submit" class="btn-submit">Wyodrębnij z IDML</button>
+                </form>
+            </div>
 
-                <button type="submit" class="btn-submit"><?= $ui['submit'] ?></button>
-            </form>
+            <!-- Office Card -->
+            <div class="card card-office">
+                <div class="card-title"><i class="fa-solid fa-file-word"></i> Office (Docx/Pptx)</div>
+                <form action="extract_office.php" method="POST" enctype="multipart/form-data">
+                    <div class="drop-zone" onclick="document.getElementById('office-input').click()">
+                        <i class="fa-solid fa-file-export"></i>
+                        <p>Prześlij plik Office</p>
+                        <span style="font-size: 0.8rem; color: var(--text-dim);">Wybierz .docx lub .pptx</span>
+                        <input type="file" name="office_file" id="office-input" accept=".docx,.pptx" style="display:none" onchange="updateLabel(this, 'office-label')" required>
+                        <div id="office-label" class="file-info"></div>
+                    </div>
+                    <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; display: block; font-weight: 600;">JĘZYK DOCELOWY</label>
+                    <select name="lang" class="form-select">
+                        <option value="cs" selected>Czeski</option>
+                        <option value="de">Niemiecki</option>
+                        <option value="sk">Słowacki</option>
+                        <option value="hu">Węgierski</option>
+                        <option value="es">Hiszpański</option>
+                        <option value="fr">Francuski</option>
+                        <option value="it">Włoski</option>
+                        <option value="pl">Polski</option>
+                    </select>
+                    <button type="submit" class="btn-submit">Wyodrębnij z Office</button>
+                </form>
+            </div>
         </div>
     </main>
 
     <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const fileNameDisplay = document.getElementById('file-name');
-
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-
-        ['dragleave', 'drop'].forEach(event => {
-            dropZone.addEventListener(event, () => dropZone.classList.remove('dragover'));
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            if (e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                updateFileName();
-            }
-        });
-
-        fileInput.addEventListener('change', updateFileName);
-
-        function updateFileName() {
-            if (fileInput.files.length) {
-                fileNameDisplay.textContent = "Wybrany plik: " + fileInput.files[0].name;
-                fileNameDisplay.style.display = 'block';
+        function updateLabel(input, labelId) {
+            const label = document.getElementById(labelId);
+            if (input.files.length) {
+                label.textContent = "Wybrano: " + input.files[0].name;
+                label.style.display = 'block';
             }
         }
     </script>
