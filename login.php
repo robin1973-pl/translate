@@ -8,7 +8,7 @@ $ui_lang = 'pl';
 $ui = $strings[$ui_lang]['login'];
 
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: dashboard.php");
     exit;
 }
 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $username;
-            header("Location: index.php");
+            header("Location: dashboard.php");
             exit;
         } else {
             $error = $ui['error'];
@@ -43,119 +43,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $ui['title'] ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/theme.css">
     <style>
-        :root {
-            --bg-deep: #081425;
-            --accent: #06B6D4;
-            --accent-glow: rgba(6, 182, 212, 0.3);
-            --glass: rgba(15, 23, 42, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.1);
-        }
         body { 
-            background: radial-gradient(circle at top right, #1e293b, #081425);
             height: 100vh; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-family: 'Inter', sans-serif;
-            color: #d8e3fb;
             margin: 0;
             overflow: hidden;
         }
-        /* Background decorative glows */
-        .glow {
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: var(--accent-glow);
-            filter: blur(100px);
-            border-radius: 50%;
-            z-index: -1;
-        }
-        .glow-1 { top: -100px; right: -100px; }
-        .glow-2 { bottom: -100px; left: -100px; }
-
+        
         .login-card { 
             width: 100%; 
             max-width: 400px; 
-            padding: 2.5rem; 
-            border-radius: 20px; 
+            padding: 3rem; 
+            border-radius: 24px; 
             background: var(--glass);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: var(--shadow);
         }
         .logo {
             text-align: center;
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 800;
             margin-bottom: 2rem;
             letter-spacing: -1px;
-            color: white;
+            color: var(--accent);
         }
-        .logo span { color: var(--accent); }
 
         .form-group { margin-bottom: 1.5rem; }
         .form-label { 
             display: block; 
-            font-size: 0.75rem; 
-            font-weight: 600; 
-            color: #869397; 
-            margin-bottom: 0.5rem;
-            letter-spacing: 1px;
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            color: var(--text-dim); 
+            margin-bottom: 0.6rem;
+            letter-spacing: 0.5px;
         }
         .form-control {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--bg-body);
             border: 1px solid var(--glass-border);
-            color: white;
-            border-radius: 8px;
-            padding: 0.75rem;
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 1rem;
             box-sizing: border-box;
             transition: all 0.3s ease;
+            font-size: 1rem;
         }
         .form-control:focus {
             outline: none;
             border-color: var(--accent);
-            background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 0 10px var(--accent-glow);
+            box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
         }
         .btn-primary { 
             width: 100%;
-            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
-            color: white;
+            padding: 1.2rem;
+            background: var(--accent);
             border: none;
-            border-radius: 8px; 
-            padding: 0.85rem; 
-            font-weight: 600; 
+            border-radius: 12px;
+            color: var(--btn-text);
+            font-weight: 700;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+            box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.3);
         }
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.6);
+            background: var(--accent-hover);
         }
         .error-msg {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            color: #f87171;
-            padding: 0.75rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
             margin-bottom: 1.5rem;
             text-align: center;
+            font-weight: 600;
         }
+        .back-home {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-home:hover { color: var(--accent); }
     </style>
 </head>
 <body>
-    <div class="glow glow-1"></div>
-    <div class="glow glow-2"></div>
-    
     <div class="login-card">
-        <div class="logo">IDML<span>Translator</span></div>
-        <h2 style="font-size: 1.25rem; margin-bottom: 2rem; text-align: center;"><?= $ui['welcome_back'] ?></h2>
+        <div class="logo">TRANSLATE.PRO</div>
+        <h2 style="font-size: 1.4rem; margin-bottom: 2rem; text-align: center; color: var(--text-main); font-weight: 800;"><?= $ui['welcome_back'] ?></h2>
         
         <?php if ($error): ?>
             <div class="error-msg"><?= htmlspecialchars($error) ?></div>
@@ -172,6 +157,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button type="submit" class="btn-primary"><?= $ui['submit'] ?></button>
         </form>
+
+        <a href="forgot_password.php" class="back-home" style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">Zapomniałeś hasła?</a>
+        <a href="index.php" class="back-home">Wróć do strony głównej</a>
     </div>
+
+    <script>
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
 </body>
 </html>

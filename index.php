@@ -1,251 +1,328 @@
 <?php
-include 'auth.php'; 
-$config = require 'config.php';
+session_start();
+require_once 'helpers/i18n.php';
 $strings = require 'helpers/ui_strings.php';
-
-$ui_lang = 'pl';
-$ui = $strings[$ui_lang]['index'];
-$username = $_SESSION['username'] ?? 'User';
-
-?><!DOCTYPE html>
+$ui_lang = get_user_language(['pl', 'en', 'de']);
+$ui = $strings[$ui_lang]['homepage'];
+?>
+<!DOCTYPE html>
 <html lang="<?= $ui_lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $ui['title'] ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title><?= $ui['hero_title'] ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --bg-deep: #081425;
-            --accent: #06B6D4;
-            --accent-office: #10b981;
-            --accent-glow: rgba(6, 182, 212, 0.2);
-            --glass: rgba(15, 23, 42, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-main: #d8e3fb;
-            --text-dim: #869397;
+            /* Professional Light Mode (Default) */
+            --bg-body: #f8fafc;
+            --bg-nav: rgba(248, 250, 252, 0.9);
+            --text-main: #0f172a;
+            --text-dim: #475569;
+            --accent: #0891b2;
+            --accent-hover: #0e7490;
+            --glass: #ffffff;
+            --glass-border: #e2e8f0;
+            --btn-text: #ffffff;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        body { 
-            background: #081425;
-            min-height: 100vh;
+
+        body.dark-mode {
+            /* Professional Dark Mode */
+            --bg-body: #0f172a;
+            --bg-nav: rgba(15, 23, 42, 0.9);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent: #22d3ee;
+            --accent-hover: #67e8f9;
+            --glass: #1e293b;
+            --glass-border: #334155;
+            --btn-text: #0f172a;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
             font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
             color: var(--text-main);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+            font-size: 18px;
         }
-        .header {
+        .background-blobs {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            opacity: 0.5;
+        }
+        .blob {
+            position: absolute;
+            width: 800px; height: 800px;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            filter: blur(100px);
+            opacity: 0.15;
+            border-radius: 50%;
+            animation: move 25s infinite alternate;
+        }
+        @keyframes move {
+            from { transform: translate(-20%, -20%); }
+            to { transform: translate(30%, 30%); }
+        }
+
+        nav {
+            padding: 1.2rem 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.5rem 2rem;
-            background: rgba(8, 20, 37, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--glass-border);
+            background: var(--bg-nav);
+            backdrop-filter: blur(12px);
             position: sticky;
             top: 0;
             z-index: 100;
+            border-bottom: 1px solid var(--glass-border);
+            box-shadow: var(--shadow);
         }
-        .logo { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
-        .logo span { color: var(--accent); }
-
-        .user-nav { display: flex; align-items: center; gap: 1.5rem; }
-        .btn-logout { color: var(--text-dim); text-decoration: none; font-size: 0.85rem; }
-        .btn-logout:hover { color: #f87171; }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 3rem 2rem;
+        .logo { font-size: 1.6rem; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+        .nav-links { display: flex; align-items: center; gap: 2rem; }
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
         }
-
-        .title-hero {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-        .title-hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -1px; }
-        .title-hero p { color: var(--text-dim); font-size: 1.1rem; }
-
-        .cards-container {
-            display: flex;
-            gap: 2rem;
-            width: 100%;
-            max-width: 1100px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .card {
-            flex: 1;
-            min-width: 340px;
-            max-width: 500px;
+        .nav-links a:hover { color: var(--accent); }
+        
+        .theme-toggle {
             background: var(--glass);
-            backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 2.5rem;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease;
-        }
-        .card:hover { transform: translateY(-5px); }
-
-        .card-title {
+            color: var(--text-main);
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            font-size: 1.5rem;
-            margin-bottom: 2rem;
-            font-weight: 700;
-        }
-        .card-idml .card-title i { color: var(--accent); }
-        .card-office .card-title i { color: var(--accent-office); }
-
-        .drop-zone {
-            border: 2px dashed var(--glass-border);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
+            justify-content: center;
             cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.1rem;
+            box-shadow: var(--shadow);
+        }
+        .theme-toggle:hover { transform: translateY(-2px); border-color: var(--accent); }
+        
+        .btn-login {
+            background: var(--accent);
+            color: var(--btn-text) !important;
+            padding: 0.6rem 1.8rem;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.39);
+        }
+
+        header {
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
+            padding: 4rem 10%;
         }
-        .card-idml .drop-zone:hover { border-color: var(--accent); background: rgba(6, 182, 212, 0.05); }
-        .card-office .drop-zone:hover { border-color: var(--accent-office); background: rgba(16, 185, 129, 0.05); }
-
-        .drop-zone i { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
-        .card-idml .drop-zone i { color: var(--accent); }
-        .card-office .drop-zone i { color: var(--accent-office); }
-
-        .form-select {
-            width: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            color: white;
-            border-radius: 12px;
-            padding: 0.85rem;
+        h1 {
+            font-size: 4rem;
             margin-bottom: 1.5rem;
-            cursor: pointer;
+            line-height: 1.1;
+            font-weight: 800;
+            color: var(--text-main);
         }
-
-        .btn-submit {
-            width: 100%;
-            border: none;
+        p.subtitle {
+            font-size: 1.4rem;
+            color: var(--text-dim);
+            max-width: 800px;
+            margin-bottom: 3.5rem;
+            font-weight: 500;
+        }
+        .cta-group { display: flex; gap: 1.2rem; flex-wrap: wrap; justify-content: center; }
+        .btn {
+            padding: 1.1rem 3rem;
             border-radius: 12px;
-            padding: 1rem;
-            font-size: 1rem;
             font-weight: 700;
-            cursor: pointer;
+            font-size: 1.1rem;
+            text-decoration: none;
             transition: all 0.3s ease;
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid transparent;
         }
-        .card-idml .btn-submit { 
-            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
-            box-shadow: 0 10px 20px -5px rgba(6, 182, 212, 0.4);
+        .btn-primary {
+            background: var(--accent);
+            color: var(--btn-text);
+            box-shadow: 0 10px 20px -10px rgba(8, 145, 178, 0.5);
         }
-        .card-office .btn-submit { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+        .btn-primary:hover { 
+            transform: translateY(-3px); 
+            background: var(--accent-hover);
+            box-shadow: 0 15px 25px -10px rgba(8, 145, 178, 0.6);
+        }
+        .btn-secondary {
+            background: var(--glass);
+            color: var(--text-main);
+            border: 2px solid var(--glass-border);
+            box-shadow: var(--shadow);
+        }
+        .btn-secondary:hover { 
+            border-color: var(--accent);
+            transform: translateY(-3px);
         }
 
-        .file-info { font-size: 0.8rem; color: var(--accent); margin-top: 0.5rem; display: none; }
-        .card-office .file-info { color: var(--accent-office); }
+        .features {
+            padding: 6rem 10%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            background: var(--bg-body);
+        }
+        .feature-card {
+            background: var(--glass);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+            box-shadow: var(--shadow);
+        }
+        .feature-card:hover { transform: translateY(-8px); border-color: var(--accent); }
+        .feature-card i { font-size: 2.5rem; color: var(--accent); margin-bottom: 1.5rem; }
+        .feature-card h3 { font-size: 1.6rem; margin-bottom: 1rem; font-weight: 700; }
+        .feature-card p { color: var(--text-dim); font-size: 1.1rem; }
 
-        .ambient-bg {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 1000px;
-            height: 1000px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
-            z-index: -1;
+        footer {
+            text-align: center;
+            padding: 4rem 10%;
+            color: var(--text-dim);
+            font-weight: 600;
+            border-top: 1px solid var(--glass-border);
+            background: var(--bg-body);
         }
     </style>
 </head>
 <body>
-    <div class="ambient-bg"></div>
-    <header class="header">
-        <a href="index.php" class="logo">IDML<span>Translator</span></a>
-        <div class="user-nav">
-            <span><i class="fa-solid fa-user-circle"></i> <?= htmlspecialchars($username) ?></span>
-            <a href="logout.php" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> <?= $ui['logout'] ?></a>
+    <div class="background-blobs">
+        <div class="blob"></div>
+    </div>
+
+    <nav>
+        <div class="logo">TRANSLATE.PRO</div>
+        <div class="nav-links">
+            <button class="theme-toggle" id="themeBtn" title="Przełącz motyw">
+                <i class="fas fa-moon"></i>
+            </button>
+            <a href="demo.php"><?= $ui['cta_demo'] ?></a>
+            <a href="login.php" class="btn-login"><?= $ui['login'] ?></a>
+            <a href="register.php"><?= $ui['register'] ?></a>
+        </div>
+    </nav>
+
+    <header>
+        <h1><?= $ui['hero_title'] ?></h1>
+        <p class="subtitle"><?= $ui['hero_subtitle'] ?></p>
+        <div class="cta-group">
+            <a href="register.php" class="btn btn-primary"><?= $ui['cta_start'] ?></a>
+            <a href="demo.php" class="btn btn-secondary"><?= $ui['cta_demo'] ?></a>
         </div>
     </header>
 
-    <main class="main-content">
-        <div class="title-hero">
-            <h1>Multi-Format Translator</h1>
-            <p>Przetłumacz swoje projekty z zachowaniem stylów i formatowania.</p>
+    <section class="features">
+        <div class="feature-card">
+            <i class="fas fa-file-invoice"></i>
+            <h3><?= $ui['feat_idml'] ?></h3>
+            <p><?= $ui['feat_idml_desc'] ?></p>
         </div>
+        <div class="feature-card">
+            <i class="fas fa-file-word"></i>
+            <h3><?= $ui['feat_office'] ?></h3>
+            <p><?= $ui['feat_office_desc'] ?></p>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-brain"></i>
+            <h3><?= $ui['feat_ai'] ?></h3>
+            <p><?= $ui['feat_ai_desc'] ?></p>
+        </div>
+    </section>
 
-        <div class="cards-container">
-            <!-- IDML Card -->
-            <div class="card card-idml">
-                <div class="card-title"><i class="fa-solid fa-layer-group"></i> InDesign (IDML)</div>
-                <form action="extract_idml.php" method="POST" enctype="multipart/form-data">
-                    <div class="drop-zone" onclick="document.getElementById('idml-input').click()">
-                        <i class="fa-solid fa-file-zipper"></i>
-                        <p><?= $ui['upload_title'] ?></p>
-                        <span style="font-size: 0.8rem; color: var(--text-dim);">Wybierz plik .idml (ZIP)</span>
-                        <input type="file" name="idml" id="idml-input" accept=".idml,.zip" style="display:none" onchange="updateLabel(this, 'idml-label')" required>
-                        <div id="idml-label" class="file-info"></div>
-                    </div>
-                    <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; display: block; font-weight: 600;">JĘZYK DOCELOWY</label>
-                    <select name="lang" class="form-select">
-                        <option value="cs" selected>Czeski</option>
-                        <option value="de">Niemiecki</option>
-                        <option value="sk">Słowacki</option>
-                        <option value="hu">Węgierski</option>
-                        <option value="es">Hiszpański</option>
-                        <option value="fr">Francuski</option>
-                        <option value="it">Włoski</option>
-                        <option value="pl">Polski</option>
-                    </select>
-                    <button type="submit" class="btn-submit">Wyodrębnij z IDML</button>
-                </form>
+    <section id="pricing" style="padding: 8rem 10%; text-align: center;">
+        <h2 style="font-size: 3rem; font-weight: 800; margin-bottom: 4rem;"><?= $strings[$ui_lang]['pricing']['title'] ?></h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1200px; margin: 0 auto;">
+            
+            <!-- Starter -->
+            <div class="feature-card" style="display: flex; flex-direction: column; align-items: center; border-radius: 30px;">
+                <span style="color: var(--text-dim); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;"><?= $strings[$ui_lang]['pricing']['starter_name'] ?></span>
+                <div style="font-size: 3.5rem; font-weight: 800; margin: 1.5rem 0;"><?= $strings[$ui_lang]['pricing']['starter_price'] ?></div>
+                <ul style="list-style: none; text-align: left; margin-bottom: 2.5rem; width: 100%;">
+                    <?php foreach ($strings[$ui_lang]['pricing']['starter_feat'] as $f): ?>
+                        <li style="margin-bottom: 1rem; color: var(--text-dim); font-weight: 500;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.8rem;"></i> <?= $f ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <a href="register.php" class="btn btn-secondary" style="width: 100%;"><?= $strings[$ui_lang]['pricing']['cta'] ?></a>
             </div>
 
-            <!-- Office Card -->
-            <div class="card card-office">
-                <div class="card-title"><i class="fa-solid fa-file-word"></i> Office (Docx/Pptx)</div>
-                <form action="extract_office.php" method="POST" enctype="multipart/form-data">
-                    <div class="drop-zone" onclick="document.getElementById('office-input').click()">
-                        <i class="fa-solid fa-file-export"></i>
-                        <p>Prześlij plik Office</p>
-                        <span style="font-size: 0.8rem; color: var(--text-dim);">Wybierz .docx lub .pptx</span>
-                        <input type="file" name="office_file" id="office-input" accept=".docx,.pptx" style="display:none" onchange="updateLabel(this, 'office-label')" required>
-                        <div id="office-label" class="file-info"></div>
-                    </div>
-                    <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.5rem; display: block; font-weight: 600;">JĘZYK DOCELOWY</label>
-                    <select name="lang" class="form-select">
-                        <option value="cs" selected>Czeski</option>
-                        <option value="de">Niemiecki</option>
-                        <option value="sk">Słowacki</option>
-                        <option value="hu">Węgierski</option>
-                        <option value="es">Hiszpański</option>
-                        <option value="fr">Francuski</option>
-                        <option value="it">Włoski</option>
-                        <option value="pl">Polski</option>
-                    </select>
-                    <button type="submit" class="btn-submit">Wyodrębnij z Office</button>
-                </form>
+            <!-- Pro -->
+            <div class="feature-card" style="display: flex; flex-direction: column; align-items: center; border-radius: 30px; border: 2px solid var(--accent); position: relative; transform: scale(1.05); z-index: 10; background: var(--glass);">
+                <div style="position: absolute; top: -15px; background: var(--accent); color: white; padding: 0.4rem 1.2rem; border-radius: 50px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Najczęściej wybierany</div>
+                <span style="color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;"><?= $strings[$ui_lang]['pricing']['pro_name'] ?></span>
+                <div style="font-size: 3.5rem; font-weight: 800; margin: 1.5rem 0;"><?= $strings[$ui_lang]['pricing']['pro_price'] ?><span style="font-size: 1rem; color: var(--text-dim);">/msc</span></div>
+                <ul style="list-style: none; text-align: left; margin-bottom: 2.5rem; width: 100%;">
+                    <?php foreach ($strings[$ui_lang]['pricing']['pro_feat'] as $f): ?>
+                        <li style="margin-bottom: 1rem; color: var(--text-main); font-weight: 600;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.8rem;"></i> <?= $f ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <a href="register.php" class="btn btn-primary" style="width: 100%;"><?= $strings[$ui_lang]['pricing']['cta'] ?></a>
+            </div>
+
+            <!-- Enterprise -->
+            <div class="feature-card" style="display: flex; flex-direction: column; align-items: center; border-radius: 30px;">
+                <span style="color: var(--text-dim); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px;"><?= $strings[$ui_lang]['pricing']['enterprise_name'] ?></span>
+                <div style="font-size: 3.5rem; font-weight: 800; margin: 1.5rem 0;"><?= $strings[$ui_lang]['pricing']['enterprise_price'] ?></div>
+                <ul style="list-style: none; text-align: left; margin-bottom: 2.5rem; width: 100%;">
+                    <?php foreach ($strings[$ui_lang]['pricing']['enterprise_feat'] as $f): ?>
+                        <li style="margin-bottom: 1rem; color: var(--text-dim); font-weight: 500;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.8rem;"></i> <?= $f ?></li>
+                    <?php endforeach; ?>
+                </ul>
+                <a href="mailto:contact@indd-translation.com" class="btn btn-secondary" style="width: 100%;">Kontakt</a>
             </div>
         </div>
-    </main>
+    </section>
+
+    <footer>
+        &copy; 2026 Translate.pro - Premium IDML Solutions
+    </footer>
 
     <script>
-        function updateLabel(input, labelId) {
-            const label = document.getElementById(labelId);
-            if (input.files.length) {
-                label.textContent = "Wybrano: " + input.files[0].name;
-                label.style.display = 'block';
-            }
+        const themeBtn = document.getElementById('themeBtn');
+        const body = document.body;
+        const icon = themeBtn.querySelector('i');
+
+        // Light is default. Check if user wants dark.
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.add('dark-mode');
+            icon.classList.replace('fa-moon', 'fa-sun');
         }
+
+        themeBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            
+            if (isDark) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        });
     </script>
 </body>
 </html>

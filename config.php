@@ -14,6 +14,9 @@ if (file_exists($secretFile)) {
 return [
     // ✅ BEZPIECZNY KLUCZ API - z osobnego pliku
     'openai_key' => $secretConfig['openai_key'] ?? '',
+    'paypal_client_id' => $secretConfig['paypal_client_id'] ?? '',
+    'paypal_secret' => $secretConfig['paypal_secret'] ?? '',
+    'paypal_mode' => $secretConfig['paypal_mode'] ?? 'sandbox',
     
     'default_lang' => 'cs',
     'upload_dir' => __DIR__ . '/uploads/',

@@ -60,6 +60,17 @@ function restoreSpacesAfterTranslation(string $text): string {
 // Główna logika
 // ---------------------------
 
+require_once 'helpers/limits.php';
+
+$dbPath = __DIR__ . '/users.db';
+$db = new SQLite3($dbPath);
+
+$limitCheck = check_user_limits($_SESSION['user_id'], $db);
+if (!$limitCheck['allowed']) {
+    header("Location: dashboard.php?error=limit_reached");
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idml'])) {
     $lang = $_POST['lang'] ?? $config['default_lang'];
     $uploadName = $_FILES['idml']['name'];
@@ -79,8 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idml'])) {
     // Upewnij się, że folder uploads istnieje
     if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
 
-    $zipPath = $uploadDir . $basename . '.idml';
+    $zipPath = $uploadDir . time() . '_' . $basename . '.idml';
     move_uploaded_file($tmpPath, $zipPath);
+
+    // 📝 ZAPISZ W HISTORII (JOBS)
+    if (isset($_SESSION['user_id'])) {
+        $db = new SQLite3(__DIR__ . '/users.db');
+        $stmt = $db->prepare("INSERT INTO jobs (user_id, filename, file_type, target_lang, status) VALUES (:uid, :fname, 'idml', :lang, 'uploaded')");
+        $stmt->bindValue(':uid', $_SESSION['user_id']);
+        $stmt->bindValue(':fname', $uploadName);
+        $stmt->bindValue(':lang', $lang);
+        $stmt->execute();
+        
+        // DEDUCT CREDIT
+        deduct_credit($_SESSION['user_id'], $db);
+    }
 
     // Rozpakuj IDML
     $zip = new ZipArchive;

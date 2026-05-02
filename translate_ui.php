@@ -33,27 +33,12 @@ $csrf = $_SESSION['csrf_token'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $ui['title'] ?> | IDML Translator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/theme.css">
     <style>
-        :root {
-            --bg-deep: #081425;
-            --accent: #06B6D4;
-            --accent-glow: rgba(6, 182, 212, 0.2);
-            --glass: rgba(15, 23, 42, 0.6);
-            --glass-card: rgba(15, 23, 42, 0.8);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --text-main: #d8e3fb;
-            --text-dim: #869397;
-            --success: #10b981;
-        }
         body { 
-            background: #081425;
             min-height: 100vh;
-            font-family: 'Inter', sans-serif;
-            color: var(--text-main);
             margin: 0;
-            padding-bottom: 5rem; /* Space for footer/actions */
+            padding-bottom: 5rem;
         }
 
         .header {
@@ -61,55 +46,56 @@ $csrf = $_SESSION['csrf_token'];
             justify-content: space-between;
             align-items: center;
             padding: 1rem 2rem;
-            background: rgba(8, 20, 37, 0.8);
+            background: var(--bg-nav);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--glass-border);
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: var(--shadow);
         }
         .logo {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: white;
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--accent);
             text-decoration: none;
+            letter-spacing: -1px;
         }
-        .logo span { color: var(--accent); }
+        .logo span { color: var(--text-main); }
 
         .container {
             max-width: 1200px;
-            margin: 2rem auto;
+            margin: 3rem auto;
             padding: 0 1.5rem;
         }
 
         .project-meta {
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
-        .project-title { margin: 0; font-size: 1.5rem; }
-        .project-title span { color: var(--accent); font-weight: 400; font-size: 1rem; margin-left: 0.5rem; }
+        .project-title { margin: 0; font-size: 1.8rem; color: var(--text-main); font-weight: 800; }
+        .project-title span { color: var(--accent); font-weight: 600; font-size: 1rem; margin-left: 0.5rem; }
 
-        /* Translation Table */
         .card {
-            background: var(--glass-card);
+            background: var(--glass);
             backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
-            border-radius: 16px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow);
         }
         .table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
         .table th {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--bg-body);
             text-align: left;
-            padding: 1rem;
-            font-weight: 600;
+            padding: 1.2rem 1rem;
+            font-weight: 700;
             color: var(--text-dim);
             border-bottom: 1px solid var(--glass-border);
             text-transform: uppercase;
@@ -117,115 +103,118 @@ $csrf = $_SESSION['csrf_token'];
             letter-spacing: 1px;
         }
         .table td {
-            padding: 1.25rem 1rem;
+            padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--glass-border);
             vertical-align: top;
+            background: var(--glass);
         }
-        .table tr:hover { background: rgba(255, 255, 255, 0.02); }
+        .table tr:hover td { background: var(--bg-body); }
 
-        .original-text { color: var(--text-dim); line-height: 1.5; }
+        .original-text { color: var(--text-main); line-height: 1.6; font-weight: 500; }
         .textarea-box {
             width: 100%;
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--bg-body);
             border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            color: white;
-            padding: 0.75rem;
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 1rem;
             font-family: inherit;
-            font-size: 0.9rem;
+            font-size: 1rem;
             resize: vertical;
-            min-height: 60px;
+            min-height: 80px;
             box-sizing: border-box;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
         .textarea-box:focus {
             outline: none;
             border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(8, 145, 178, 0.1);
         }
 
-        /* Action Bar */
         .action-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(8, 20, 37, 0.9);
+            background: var(--bg-nav);
             backdrop-filter: blur(20px);
             border-top: 1px solid var(--glass-border);
-            padding: 1rem 2rem;
+            padding: 1.2rem 2rem;
             display: flex;
             justify-content: center;
-            gap: 1.5rem;
+            gap: 2rem;
             z-index: 200;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
         }
         .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
             border: none;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.7rem;
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 1rem;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #06b6d4 0%, #6366f1 100%);
+            background: var(--accent);
             color: white;
-            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+            box-shadow: 0 4px 14px 0 rgba(8, 145, 178, 0.3);
         }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6, 182, 212, 0.5); }
+        .btn-primary:hover { transform: translateY(-2px); background: var(--accent-hover); }
         
         .btn-outline {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
+            background: var(--bg-body);
+            color: var(--text-main);
             border: 1px solid var(--glass-border);
         }
-        .btn-outline:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+        .btn-outline:hover { background: var(--glass); border-color: var(--accent); }
 
-        /* Loader & Progress */
         #loader {
             display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 400px;
-            background: var(--glass-card);
+            width: 450px;
+            background: var(--glass);
             backdrop-filter: blur(30px);
             border: 1px solid var(--accent);
-            border-radius: 20px;
-            padding: 2rem;
+            border-radius: 24px;
+            padding: 2.5rem;
             z-index: 1000;
-            box-shadow: 0 0 50px rgba(6, 182, 212, 0.4);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
             text-align: center;
         }
         .progress-container {
-            background: rgba(0,0,0,0.3);
+            background: var(--bg-body);
             border-radius: 10px;
-            height: 8px;
-            margin: 1.5rem 0;
+            height: 10px;
+            margin: 2rem 0;
             overflow: hidden;
         }
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #06b6d4, #6366f1);
+            background: var(--accent);
             box-shadow: 0 0 10px var(--accent);
             transition: width 0.3s ease;
         }
         #loader-log {
-            font-family: monospace;
-            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
             color: var(--text-dim);
-            max-height: 100px;
+            max-height: 120px;
             overflow-y: auto;
             text-align: left;
-            background: rgba(0,0,0,0.2);
-            padding: 0.5rem;
-            border-radius: 4px;
+            background: var(--bg-body);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
         }
 
         .hidden-token { display: none; }
@@ -234,10 +223,9 @@ $csrf = $_SESSION['csrf_token'];
     </style>
 </head>
 <body>
-
     <header class="header">
-        <a href="index.php" class="logo">IDML<span>Translator</span></a>
-        <div style="font-size: 0.85rem; color: var(--text-dim);">
+        <a href="dashboard.php" class="logo">TRANSLATE<span>.PRO</span></a>
+        <div style="font-size: 0.9rem; color: var(--text-dim); font-weight: 600;">
             <i class="fa-solid fa-file-code"></i> <?= htmlspecialchars($original_idml) ?>
         </div>
     </header>
@@ -335,30 +323,20 @@ $csrf = $_SESSION['csrf_token'];
 
         async function translateText(text) {
             try {
-                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                const response = await fetch('api/translate.php', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer <?= $config["openai_key"] ?>'
-                    },
-                    body: JSON.stringify({
-                        model: 'gpt-4o',
-                        messages: [
-                            {
-                                role: 'system',
-                                content: `You are a professional translator. Translate accurately into ${targetLang}. 
-                                Preserve all technical symbols like °, ², ³, ₀, ₁, ₂, ₊, ⁻.
-                                Do not translate DMX channel names (CH 1, SL 1).`
-                            },
-                            { role: 'user', content: `Translate this into ${targetLang}:\n\n${text}` }
-                        ],
-                        temperature: 0.3
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, targetLang })
                 });
 
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
                 const data = await response.json();
-                return data.choices[0].message.content.trim();
+                if (data.error) throw new Error(data.error);
+                
+                return { 
+                    text: data.translated, 
+                    fromCache: data.source === 'cache' 
+                };
             } catch (error) { throw error; }
         }
 
@@ -394,15 +372,20 @@ $csrf = $_SESSION['csrf_token'];
 
                 await Promise.allSettled(batch.map(async (task) => {
                     try {
+                        const res = await translateText(task.original);
+                        
                         const div = document.createElement('div');
-                        div.innerText = `> ${task.original.substring(0, 20)}...`;
+                        const icon = res.fromCache ? '💾' : '🌐';
+                        div.innerHTML = `<span title="${res.fromCache ? 'Z cache' : 'Z API'}">${icon}</span> ${task.original.substring(0, 25)}...`;
                         loaderLog.prepend(div);
 
-                        const res = await translateText(task.original);
-                        task.textarea.value = res;
+                        task.textarea.value = res.text;
                         checkLength(task.textarea, task.index);
                     } catch (e) {
                         console.error(e);
+                        const div = document.createElement('div');
+                        div.innerHTML = `<span style="color: #ef4444">❌ Błąd: ${task.original.substring(0, 15)}...</span>`;
+                        loaderLog.prepend(div);
                     }
                 }));
             }
