@@ -4,18 +4,29 @@ include 'auth.php'; // translate_ui.php
 
 $config = require 'config.php';
 $strings = require 'helpers/ui_strings.php';
+require_once 'helpers/i18n.php';
+require_once 'helpers/workspace.php';
 
-// UI language setup
-$ui_lang = 'pl';
+$ui_lang = get_user_language();
 $ui = $strings[$ui_lang]['translate'];
 $ui_index = $strings[$ui_lang]['index'];
 
 $lang = $_GET['lang'] ?? $config['default_lang'];
-$csvFile = $config['csv_dir'] . 'translated.csv';
-$original_idml = $_GET['original_idml'] ?? 'IDML File';
+$job_id = (int)($_GET['job_id'] ?? 0);
+$filePath = $_GET['file'] ?? '';
+$original_filename = $filePath ? basename($filePath) : ($_GET['original_idml'] ?? 'Dokument');
+$user_id = (int)$_SESSION['user_id'];
+
+// Load CSV from isolated workspace (new) or legacy global path (fallback)
+if ($job_id > 0) {
+    $csvFile = get_csv_path($user_id, $job_id);
+} else {
+    // Legacy fallback for old jobs without workspace
+    $csvFile = $config['csv_dir'] . 'translated.csv';
+}
 
 if (!file_exists($csvFile)) {
-    die("Brak danych do tłumaczenia. Wróć do strony głównej.");
+    die($ui['error_no_csv']);
 }
 
 $rows = array_map('str_getcsv', file($csvFile));
@@ -53,6 +64,68 @@ $csrf = $_SESSION['csrf_token'];
             top: 0;
             z-index: 100;
             box-shadow: var(--shadow);
+        }
+        
+        /* Modern Processing Overlay */
+        #processingOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.4s ease;
+        }
+        body.dark-mode #processingOverlay {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .spinner-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 2rem;
+        }
+        .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        .spinner-ring:nth-child(2) {
+            width: 80%; height: 80%; top: 10%; left: 10%;
+            border-top-color: #22d3ee;
+            animation-duration: 0.8s;
+            animation-direction: reverse;
+        }
+        .spinner-icon {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            color: var(--accent);
+            animation: pulse 2s infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); } }
+
+        .processing-text {
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+        .processing-sub {
+            color: var(--text-dim);
+            margin-top: 8px;
         }
         .logo {
             font-size: 1.2rem;
@@ -222,36 +295,55 @@ $csrf = $_SESSION['csrf_token'];
         .warning-text { border-color: #f59e0b !important; }
     </style>
 </head>
-<body>
+<body class="<?= $_SESSION['theme'] ?? '' ?>">
+    <!-- Processing Overlay -->
+    <div id="processingOverlay">
+        <div class="spinner-container">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-icon">
+                <i class="fas fa-magic"></i>
+            </div>
+        </div>
+        <div class="processing-text"><?= $ui['overlay_title'] ?></div>
+        <div class="processing-sub"><?= $ui['overlay_sub'] ?></div>
+    </div>
     <header class="header">
-        <a href="dashboard.php" class="logo">TRANSLATE<span>.PRO</span></a>
+        <a href="dashboard.php" class="logo">INDD <span>TRANSLATION</span></a>
         <div style="font-size: 0.9rem; color: var(--text-dim); font-weight: 600;">
-            <i class="fa-solid fa-file-code"></i> <?= htmlspecialchars($original_idml) ?>
+            <i class="fa-solid fa-file-code"></i> <?= htmlspecialchars($original_filename) ?>
         </div>
     </header>
 
     <div class="container">
         <div class="project-meta">
             <div>
-                <h1 class="project-title">Panel Tłumaczenia<span><i class="fa-solid fa-arrow-right"></i> <?= strtoupper($lang) ?></span></h1>
+                <h1 class="project-title"><?= $ui['title'] ?> <span><i class="fa-solid fa-arrow-right"></i> <?= strtoupper($lang) ?></span></h1>
             </div>
             <div style="font-size: 0.9rem; color: var(--text-dim);">
-                <i class="fa-solid fa-list-check"></i> Razem segmentów: <b><?= count($rows) ?></b>
+                <i class="fa-solid fa-list-check"></i> <?= $ui['segments'] ?>: <b><?= count($rows) ?></b>
             </div>
         </div>
 
-        <form method="POST" action="apply_translation.php" id="translateForm">
+        <?php
+        $applyAction = (strtolower(pathinfo($original_filename, PATHINFO_EXTENSION)) === 'idml') 
+            ? 'apply_translation.php' 
+            : 'apply_office_translation.php';
+        ?>
+        <form method="POST" action="<?= $applyAction ?>" id="translateForm">
             <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
             <input type="hidden" name="lang" value="<?= htmlspecialchars($lang) ?>">
-            <input type="hidden" name="original_idml" value="<?= htmlspecialchars($original_idml) ?>">
+            <input type="hidden" name="original_idml" value="<?= htmlspecialchars($original_filename) ?>">
+            <input type="hidden" name="file_path" value="<?= htmlspecialchars($filePath) ?>">
+            <input type="hidden" name="job_id" value="<?= htmlspecialchars($job_id) ?>">
 
             <div class="card">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 15%">Plik</th>
-                            <th style="width: 40%">Oryginał</th>
-                            <th style="width: 45%">Tłumaczenie</th>
+                            <th style="width: 15%"><?= $ui['table_file'] ?></th>
+                            <th style="width: 40%"><?= $ui['table_original'] ?></th>
+                            <th style="width: 45%"><?= $ui['table_translated'] ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -287,6 +379,16 @@ $csrf = $_SESSION['csrf_token'];
             </div>
 
             <div class="action-bar">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim);"><?= $ui['context_label'] ?>:</label>
+                    <select id="translationContext" class="textarea-box" style="width: auto; padding: 8px 12px; margin: 0;">
+                        <option value="general"><?= $ui['context_general'] ?></option>
+                        <option value="tech"><?= $ui['context_tech'] ?></option>
+                        <option value="marketing"><?= $ui['context_marketing'] ?></option>
+                        <option value="legal"><?= $ui['context_legal'] ?></option>
+                        <option value="lit"><?= $ui['context_lit'] ?></option>
+                    </select>
+                </div>
                 <button type="button" class="btn btn-outline" onclick="autoTranslate()">
                     <i class="fa-solid fa-wand-magic-sparkles"></i> <?= $ui['auto_translate'] ?>
                 </button>
@@ -299,7 +401,7 @@ $csrf = $_SESSION['csrf_token'];
 
     <div id="loader">
         <h3 style="margin-top: 0;"><?= $ui['processing'] ?></h3>
-        <p id="loader-status" style="font-size: 0.9rem; color: var(--text-dim);">Przygotowywanie...</p>
+        <p id="loader-status" style="font-size: 0.9rem; color: var(--text-dim);"></p>
         <div class="progress-container">
             <div id="loader-progress" class="progress-bar"></div>
         </div>
@@ -321,12 +423,12 @@ $csrf = $_SESSION['csrf_token'];
             }
         }
 
-        async function translateText(text) {
+        async function translateText(text, context = 'general') {
             try {
                 const response = await fetch('api/translate.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, targetLang })
+                    body: JSON.stringify({ text, targetLang, context })
                 });
 
                 if (!response.ok) throw new Error(`Server error: ${response.status}`);
@@ -341,12 +443,9 @@ $csrf = $_SESSION['csrf_token'];
         }
 
         async function autoTranslate() {
-            const loader = document.getElementById('loader');
-            const loaderStatus = document.getElementById('loader-status');
-            const loaderProgress = document.getElementById('loader-progress');
-            const loaderLog = document.getElementById('loader-log');
+            const overlay = document.getElementById('processingOverlay');
             
-            loader.style.display = 'block';
+            overlay.style.display = 'flex';
             const textareas = document.querySelectorAll('.textarea-box');
             const tasks = [];
             
@@ -358,8 +457,8 @@ $csrf = $_SESSION['csrf_token'];
             });
 
             if (tasks.length === 0) {
-                alert("Wszystkie pola są już wypełnione!");
-                loader.style.display = 'none';
+                alert("<?= $ui['msg_all_filled'] ?>");
+                overlay.style.display = 'none';
                 return;
             }
 
@@ -367,16 +466,18 @@ $csrf = $_SESSION['csrf_token'];
             for (let i = 0; i < tasks.length; i += batchSize) {
                 const batch = tasks.slice(i, i + batchSize);
                 const progress = Math.round((i / tasks.length) * 100);
-                loaderStatus.innerText = `Przetwarzanie: ${i} / ${tasks.length}`;
+                loaderStatus.innerText = `<?= $ui['msg_processing'] ?>: ${i} / ${tasks.length}`;
                 loaderProgress.style.width = `${progress}%`;
 
                 await Promise.allSettled(batch.map(async (task) => {
                     try {
-                        const res = await translateText(task.original);
+                        const context = document.getElementById('translationContext').value;
+                        const res = await translateText(task.original, context);
                         
                         const div = document.createElement('div');
                         const icon = res.fromCache ? '💾' : '🌐';
-                        div.innerHTML = `<span title="${res.fromCache ? 'Z cache' : 'Z API'}">${icon}</span> ${task.original.substring(0, 25)}...`;
+                        const sourceTitle = res.fromCache ? '<?= $ui['msg_cache'] ?>' : '<?= $ui['msg_api'] ?>';
+                        div.innerHTML = `<span title="${sourceTitle}">${icon}</span> ${task.original.substring(0, 25)}...`;
                         loaderLog.prepend(div);
 
                         task.textarea.value = res.text;
@@ -384,15 +485,14 @@ $csrf = $_SESSION['csrf_token'];
                     } catch (e) {
                         console.error(e);
                         const div = document.createElement('div');
-                        div.innerHTML = `<span style="color: #ef4444">❌ Błąd: ${task.original.substring(0, 15)}...</span>`;
+                        div.innerHTML = `<span style="color: #ef4444">❌ <?= $ui['msg_error'] ?>: ${task.original.substring(0, 15)}...</span>`;
                         loaderLog.prepend(div);
                     }
                 }));
             }
 
-            loaderProgress.style.width = '100%';
-            loaderStatus.innerText = "Zakończono!";
-            setTimeout(() => { loader.style.display = 'none'; }, 1500);
+            overlay.style.display = 'none';
+            alert("<?= $ui['msg_finished'] ?>");
         }
     </script>
 </body>

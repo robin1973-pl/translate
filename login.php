@@ -1,10 +1,9 @@
 <?php
 session_start();
 $config = require 'config.php';
+require_once 'helpers/i18n.php';
 $strings = require 'helpers/ui_strings.php';
-
-// Możesz tu dodać wybór języka w przyszłości, teraz domyślnie PL
-$ui_lang = 'pl';
+$ui_lang = get_user_language();
 $ui = $strings[$ui_lang]['login'];
 
 if (isset($_SESSION['user_id'])) {
@@ -33,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = $ui['error'];
         }
     } else {
-        $error = "Baza danych nie istnieje. Uruchom setup_db.php";
+        $error = $ui['error_config'];
     }
 }
 ?>
@@ -115,6 +114,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transform: translateY(-2px);
             background: var(--accent-hover);
         }
+        
+        .social-login {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-social {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 0.8rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+        }
+        .btn-google {
+            background: white;
+            color: #1f2937;
+        }
+        .btn-social:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .divider:not(:empty)::before { margin-right: 1rem; }
+        .divider:not(:empty)::after { margin-left: 1rem; }
         .error-msg {
             background: #fee2e2;
             border: 1px solid #fecaca;
@@ -139,7 +185,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-card">
-        <div class="logo">TRANSLATE.PRO</div>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem;">
+            <a href="?lang=pl" title="Polski" style="text-decoration: none; font-size: 1.2rem;">🇵🇱</a>
+            <a href="?lang=en" title="English" style="text-decoration: none; font-size: 1.2rem;">🇬🇧</a>
+            <a href="?lang=de" title="Deutsch" style="text-decoration: none; font-size: 1.2rem;">🇩🇪</a>
+            <a href="?lang=cs" title="Čeština" style="text-decoration: none; font-size: 1.2rem;">🇨🇿</a>
+        </div>
+        <div class="logo">INDD TRANSLATION</div>
         <h2 style="font-size: 1.4rem; margin-bottom: 2rem; text-align: center; color: var(--text-main); font-weight: 800;"><?= $ui['welcome_back'] ?></h2>
         
         <?php if ($error): ?>
@@ -158,8 +210,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn-primary"><?= $ui['submit'] ?></button>
         </form>
 
-        <a href="forgot_password.php" class="back-home" style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">Zapomniałeś hasła?</a>
-        <a href="index.php" class="back-home">Wróć do strony głównej</a>
+        <div class="divider"><?= $ui['or'] ?></div>
+
+        <div class="social-login">
+            <a href="social_auth.php?provider=google" class="btn-social btn-google" style="width: 100%; justify-content: center;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google">
+                <?= $ui['google'] ?>
+            </a>
+        </div>
+
+        <a href="forgot_password.php" class="back-home" style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;"><?= $ui['forgot'] ?></a>
+        <a href="index.php" class="back-home"><?= $ui['back'] ?></a>
     </div>
 
     <script>

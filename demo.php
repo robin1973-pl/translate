@@ -26,7 +26,7 @@ $current = $options[$selection];
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Demo AI - Translate.pro</title>
+    <title>Demo AI - indd-translation.com</title>
     <link rel="stylesheet" href="assets/css/theme.css?v=2.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

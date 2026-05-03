@@ -19,6 +19,21 @@ $options = [
 
 $text = $options[$selection] ?? $options['tadeusz'];
 
+// CACHE LOGIC: Sprawdzamy czy mamy już to tłumaczenie na dysku
+$cacheDir = __DIR__ . '/cache/demo/';
+if (!is_dir($cacheDir)) mkdir($cacheDir, 0755, true);
+
+$cacheFile = $cacheDir . md5($selection . $target_lang_code) . '.txt';
+
+if (file_exists($cacheFile)) {
+    echo json_encode([
+        'status' => 'success',
+        'translation' => file_get_contents($cacheFile),
+        'cached' => true
+    ]);
+    exit;
+}
+
 // OpenAI API Call
 $apiKey = $config['openai_key'];
 
@@ -76,9 +91,14 @@ if ($httpCode !== 200) {
 $resData = json_decode($response, true);
 
 if (isset($resData['choices'][0]['message']['content'])) {
+    $translation = trim($resData['choices'][0]['message']['content']);
+    
+    // Zapisujemy do cache na przyszłość
+    file_put_contents($cacheFile, $translation);
+
     echo json_encode([
         'status' => 'success',
-        'translation' => trim($resData['choices'][0]['message']['content'])
+        'translation' => $translation
     ]);
 } else {
     echo json_encode([

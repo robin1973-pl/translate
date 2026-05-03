@@ -20,9 +20,20 @@ return [
     
     'default_lang' => 'cs',
     'upload_dir' => __DIR__ . '/uploads/',
+    'workspace_dir' => __DIR__ . '/workspace/',
+    // Legacy dirs — kept for cron_cleanup backward compat
     'temp_dir' => __DIR__ . '/temp/',
     'output_dir' => __DIR__ . '/output/',
     'csv_dir' => __DIR__ . '/translations/',
+    
+    // Social Auth Config
+    'social' => [
+        'google' => [
+            'client_id'     => $secretConfig['google_client_id'] ?? '',
+            'client_secret' => $secretConfig['google_client_secret'] ?? '',
+            'redirect_uri'  => 'https://indd-translation.com/social_auth.php?provider=google'
+        ]
+    ],
 	
     'skip_tokens' => ['COB', 'PAR', 'BAR', ':', '-', '–', '—', '•', '*', '...', '(', ')', '	...' ],
 	

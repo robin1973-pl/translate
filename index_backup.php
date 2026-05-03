@@ -2,7 +2,7 @@
 session_start();
 require_once 'helpers/i18n.php';
 $strings = require 'helpers/ui_strings.php';
-$ui_lang = get_user_language(['pl', 'en', 'de', 'cs']);
+$ui_lang = get_user_language(['pl', 'en', 'de']);
 $ui = $strings[$ui_lang]['homepage'];
 ?>
 <!DOCTYPE html>
@@ -10,10 +10,8 @@ $ui = $strings[$ui_lang]['homepage'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INDD Translation | Professional InDesign & IDML AI Translator</title>
-    <meta name="description" content="The world's only professional AI translator for Adobe InDesign. Translate IDML documents while perfectly preserving layout, styles, and technical symbols like H2O or m2.">
-    <meta name="keywords" content="InDesign translation, IDML translator, INDD translate, DTP translation, Adobe InDesign AI, professional document translation, preserve styles">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title><?= $ui['hero_title'] ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -217,19 +215,12 @@ $ui = $strings[$ui_lang]['homepage'];
     </div>
 
     <nav>
-        <div class="logo">INDD TRANSLATION</div>
+        <div class="logo">TRANSLATE.PRO</div>
         <div class="nav-links">
             <button class="theme-toggle" id="themeBtn" title="Przełącz motyw">
                 <i class="fas fa-moon"></i>
             </button>
-            <div class="lang-switcher" style="display: flex; gap: 8px; margin: 0 15px;">
-                <a href="?lang=pl" title="Polski" style="text-decoration: none; font-size: 1.2rem;">🇵🇱</a>
-                <a href="?lang=en" title="English" style="text-decoration: none; font-size: 1.2rem;">🇬🇧</a>
-                <a href="?lang=de" title="Deutsch" style="text-decoration: none; font-size: 1.2rem;">🇩🇪</a>
-                <a href="?lang=cs" title="Čeština" style="text-decoration: none; font-size: 1.2rem;">🇨🇿</a>
-            </div>
             <a href="demo.php"><?= $ui['cta_demo'] ?></a>
-            <a href="help.php"><?= $strings[$ui_lang]['help']['title'] ?></a>
             <a href="login.php" class="btn-login"><?= $ui['login'] ?></a>
             <a href="register.php"><?= $ui['register'] ?></a>
         </div>
@@ -306,7 +297,7 @@ $ui = $strings[$ui_lang]['homepage'];
     </section>
 
     <footer>
-        &copy; 2026 indd-translation.com - Premium IDML Solutions
+        &copy; 2026 Translate.pro - Premium IDML Solutions
     </footer>
 
     <script>

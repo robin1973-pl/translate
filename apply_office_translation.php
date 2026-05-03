@@ -1,37 +1,53 @@
 <?php // apply_office_translation.php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
+include 'auth.php';
+require_once 'helpers/workspace.php';
 $config = require 'config.php';
 
-if (isset($_GET['original_file'])) {
-    $originalName = $_GET['original_file'];
-    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-    $basename = pathinfo($originalName, PATHINFO_FILENAME);
+require_once 'helpers/i18n.php';
+$strings = require 'helpers/ui_strings.php';
+$ui_lang = get_user_language();
+$ui = $strings[$ui_lang]['translate'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['file_path'])) {
+    $filePath = $_POST['file_path']; // Full path on server
+    if (!file_exists($filePath)) {
+        die($ui['error_source_not_found']);
+    }
     
-    $uploadDir = $config['upload_dir'];
-    $tempDir = $config['temp_dir'] . 'rebuild_' . time() . '/';
-    $outputDir = $config['output_dir'];
-    $csvFile = $config['csv_dir'] . 'translated.csv';
+    $originalName = $_POST['original_idml'] ?? basename($filePath);
+    $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+    $job_id = (int)($_POST['job_id'] ?? 0);
+    $user_id = (int)$_SESSION['user_id'];
+
+    // Workspace-based paths
+    if ($job_id > 0) {
+        $tempDir = get_workspace_path($user_id, $job_id) . 'rebuild_office/';
+        $outputDir = get_output_dir($user_id, $job_id);
+        $csvFile = get_csv_path($user_id, $job_id);
+    } else {
+        // Legacy fallback
+        $tempDir = $config['temp_dir'] . 'rebuild_' . uniqid() . '/';
+        $outputDir = $config['output_dir'];
+        $csvFile = $config['csv_dir'] . 'translated.csv';
+    }
 
     if (!is_dir($tempDir)) mkdir($tempDir, 0777, true);
     if (!is_dir($outputDir)) mkdir($outputDir, 0777, true);
 
     // 1. Rozpakuj oryginał do temp
     $zip = new ZipArchive;
-    if ($zip->open($uploadDir . $originalName) === TRUE) {
+    if ($zip->open($filePath) === TRUE) {
         $zip->extractTo($tempDir);
         $zip->close();
     } else {
-        die("Błąd otwierania oryginału.");
+        die($ui['error_zip_open']);
     }
 
     // 2. Wczytaj tłumaczenia z CSV
     $translations = [];
-    if (($handle = fopen($csvFile, "r")) !== FALSE) {
+    if (file_exists($csvFile) && ($handle = fopen($csvFile, "r")) !== FALSE) {
         fgetcsv($handle); // skip header
         while (($data = fgetcsv($handle)) !== FALSE) {
-            // [FileName, ContentIndex, Original, Translated]
             $translations[$data[0]][$data[1]] = $data[3];
         }
         fclose($handle);
@@ -44,7 +60,6 @@ if (isset($_GET['original_file'])) {
             $xmlString = file_get_contents($fullPath);
             $dom = new DOMDocument();
             $dom->preserveWhiteSpace = true;
-            $dom->formatOutput = false;
             $dom->loadXML($xmlString);
 
             $ns = ($ext === 'docx') ? 'http://schemas.openxmlformats.org/wordprocessingml/2006/main' : 'http://schemas.openxmlformats.org/drawingml/2006/main';
@@ -59,26 +74,35 @@ if (isset($_GET['original_file'])) {
         }
     }
 
-    // 4. Zapakuj z powrotem
-    $outputFile = $outputDir . 'translated_' . $originalName;
+    // 4. Zapakuj z powrotem — unique filename
+    $outputFile = $outputDir . 'translated_' . uniqid() . '_' . $originalName;
     $zip = new ZipArchive;
     if ($zip->open($outputFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
         $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tempDir), RecursiveIteratorIterator::LEAVES_ONLY);
         foreach ($files as $name => $file) {
             if (!$file->isDir()) {
-                $filePath = $file->getRealPath();
-                $relativePath = substr($filePath, strlen(realpath($tempDir)) + 1);
-                $zip->addFile($filePath, $relativePath);
+                $filePathOnDisk = $file->getRealPath();
+                $relativePath = substr($filePathOnDisk, strlen(realpath($tempDir)) + 1);
+                $zip->addFile($filePathOnDisk, $relativePath);
             }
         }
         $zip->close();
     }
 
+    // 4.5. Aktualizacja bazy danych (JOBS)
+    if ($job_id) {
+        $db = new SQLite3('users.db');
+        $stmt = $db->prepare("UPDATE jobs SET status = 'completed', output_path = :path WHERE id = :id AND user_id = :uid");
+        $stmt->bindValue(':path', $outputFile);
+        $stmt->bindValue(':id', $job_id);
+        $stmt->bindValue(':uid', $user_id);
+        $stmt->execute();
+    }
+
     // 5. Pobieranie
     header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . basename($outputFile) . '"');
+    header('Content-Disposition: attachment; filename="translated_' . $originalName . '"');
     header('Content-Length: ' . filesize($outputFile));
     readfile($outputFile);
     exit;
 }
-?>

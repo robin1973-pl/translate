@@ -1,5 +1,9 @@
 <?php
 session_start();
+require_once 'helpers/i18n.php';
+$strings = require 'helpers/ui_strings.php';
+$ui_lang = get_user_language();
+$ui = $strings[$ui_lang]['forgot'];
 $db = new SQLite3(__DIR__ . '/users.db');
 
 $message = "";
@@ -16,9 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $token = bin2hex(random_bytes(16));
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
         
-        // Add columns if not exists
-        $db->exec("ALTER TABLE users ADD COLUMN reset_token TEXT");
-        $db->exec("ALTER TABLE users ADD COLUMN reset_expires DATETIME");
+        // Add columns if not exists (fail-safe)
+        @$db->exec("ALTER TABLE users ADD COLUMN reset_token TEXT");
+        @$db->exec("ALTER TABLE users ADD COLUMN reset_expires DATETIME");
         
         $stmt = $db->prepare("UPDATE users SET reset_token = :t, reset_expires = :e WHERE id = :id");
         $stmt->bindValue(':t', $token);
@@ -26,20 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindValue(':id', $user['id']);
         $stmt->execute();
 
-        $message = "Jeśli podany adres istnieje w bazie, wysłaliśmy na niego instrukcje resetowania hasła.";
-        // DEBUG
+        $message = $ui['success'];
         $debug_link = "reset_password.php?token=$token";
     } else {
-        $message = "Jeśli podany adres istnieje w bazie, wysłaliśmy na niego instrukcje resetowania hasła.";
+        $message = $ui['success']; // Consistent feedback for security
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="<?= $ui_lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Przypomnij hasło - Translate.pro</title>
+    <title><?= $ui['title'] ?> - INDD Translation</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -122,29 +125,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-card">
-        <div class="logo">TRANSLATE.PRO</div>
-        <h2 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main); font-weight: 800;">Odzyskaj dostęp</h2>
-        <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem;">Podaj swój e-mail, aby otrzymać link.</p>
+        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem;">
+            <a href="?lang=pl" title="Polski" style="text-decoration: none; font-size: 1.2rem;">🇵🇱</a>
+            <a href="?lang=en" title="English" style="text-decoration: none; font-size: 1.2rem;">🇬🇧</a>
+            <a href="?lang=de" title="Deutsch" style="text-decoration: none; font-size: 1.2rem;">🇩🇪</a>
+            <a href="?lang=cs" title="Čeština" style="text-decoration: none; font-size: 1.2rem;">🇨🇿</a>
+        </div>
+        <div class="logo">INDD TRANSLATION</div>
+        <h2 style="font-size: 1.4rem; margin-bottom: 1rem; color: var(--text-main); font-weight: 800;"><?= $ui['title'] ?></h2>
+        <p style="color: var(--text-dim); font-size: 0.95rem; margin-bottom: 2rem;"><?= $ui['desc'] ?></p>
 
         <?php if ($message): ?>
             <div class="alert-success">
                 <?= $message ?>
                 <?php if (isset($debug_link)): ?>
                     <br><br>
-                    <a href="<?= $debug_link ?>" style="color: var(--accent); font-size: 0.8rem;">[KLIKNIJ TUTAJ, ABY RESETOWAĆ]</a>
+                    <a href="<?= $debug_link ?>" style="color: var(--accent); font-size: 0.8rem;"><?= $ui['debug_click'] ?></a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
 
         <form method="POST">
             <div class="form-group">
-                <label class="form-label">ADRES E-MAIL</label>
-                <input type="email" name="email" class="form-control" placeholder="twoj@email.com" required>
+                <label class="form-label"><?= $ui['email_label'] ?></label>
+                <input type="email" name="email" class="form-control" placeholder="your@email.com" required>
             </div>
-            <button type="submit" class="btn-primary">Wyślij instrukcje</button>
+            <button type="submit" class="btn-primary"><?= $ui['submit'] ?></button>
         </form>
 
-        <a href="login.php" class="back-link"><i class="fas fa-arrow-left"></i> Powrót do logowania</a>
+        <a href="login.php" class="back-link"><i class="fas fa-arrow-left"></i> <?= $ui['back_login'] ?></a>
     </div>
 </body>
 </html>

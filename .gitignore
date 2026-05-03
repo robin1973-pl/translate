@@ -4,6 +4,8 @@ uploads/
 temp/
 output/
 translations/
+workspace/
+cache/
 logs/
 *.idml
 *.zip

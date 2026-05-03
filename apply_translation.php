@@ -1,138 +1,115 @@
 <?php include 'auth.php';
-// apply_translation.php – zapis i wygenerowanie IDML z ochroną spacji
-
+// apply_translation.php – Professional version with isolated workspace
+require_once 'helpers/text_utils.php';
+require_once 'helpers/workspace.php';
 $config = require 'config.php';
 
-// 🔹 Funkcja przywracająca wiodące i końcowe spacje
-function restoreSpacesAfterTranslation(string $text): string {
-    $text = preg_replace_callback('/\{__LEADSPACES__(\d+)__\}/u', function($m){
-        return str_repeat(' ', (int)$m[1]);
-    }, $text);
-
-    $text = preg_replace_callback('/\{__TRAILSPACES__(\d+)__\}/u', function($m){
-        return str_repeat(' ', (int)$m[1]);
-    }, $text);
-
-    return $text;
-}
+require_once 'helpers/i18n.php';
+$strings = require 'helpers/ui_strings.php';
+$ui_lang = get_user_language();
+$ui = $strings[$ui_lang]['translate'];
 
 if ($_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
-    die("Nieprawidłowy token CSRF.");
+    die($ui['error_csrf']);
+}
+
+$filePath = $_POST['file_path'] ?? '';
+if (!file_exists($filePath)) {
+    die($ui['error_source_not_found']);
 }
 
 $translated = $_POST['translated'] ?? [];
 $original = $_POST['original'] ?? [];
-$file = $_POST['file'] ?? [];
-$index = $_POST['index'] ?? [];
-$lang = $_POST['lang'] ?? $config['default_lang'];
+$fileKeys = $_POST['file'] ?? [];
+$indexKeys = $_POST['index'] ?? [];
+$original_name = $_POST['original_idml'] ?? basename($filePath);
+$job_id = (int)($_POST['job_id'] ?? 0);
+$user_id = (int)$_SESSION['user_id'];
 
-// ✅ DODAJ TUTAJ WALIDACJĘ:
-$count_translated = count($translated);
-$count_original = count($original);
-$count_file = count($file);
-$count_index = count($index);
-
-if ($count_translated !== $count_original || 
-    $count_translated !== $count_file || 
-    $count_translated !== $count_index) {
-    die("Błąd: Niespójne dane wejściowe. " .
-        "translated: $count_translated, " .
-        "original: $count_original, " .
-        "file: $count_file, " .
-        "index: $count_index");
+// Workspace-based rebuild directory
+if ($job_id > 0) {
+    $tempDir = get_workspace_path($user_id, $job_id) . 'rebuild_idml/';
+    $outputDir = get_output_dir($user_id, $job_id);
+} else {
+    // Legacy fallback
+    $tempDir = $config['temp_dir'] . 'rebuild_idml_' . uniqid() . '/';
+    $outputDir = $config['output_dir'];
 }
 
-// Dodatkowe zabezpieczenie - sprawdź czy nie ma pustych wartości w kluczowych polach
-foreach ($translated as $i => $value) {
-    if (!isset($original[$i]) || !isset($file[$i]) || !isset($index[$i])) {
-        die("Błąd: Brakujące dane dla indeksu $i");
-    }
+if (!is_dir($tempDir)) mkdir($tempDir, 0777, true);
+if (!is_dir($outputDir)) mkdir($outputDir, 0777, true);
+
+// 1. Rozpakuj oryginał
+$zip = new ZipArchive;
+if ($zip->open($filePath) === TRUE) {
+    $zip->extractTo($tempDir);
+    $zip->close();
+} else {
+    die($ui['error_zip_open']);
 }
 
-$csvFile = $config['csv_dir'] . 'translated.csv';
-$tempPath = $config['temp_dir'];
-$outputPath = $config['output_dir'] . 'translated_' . date('Ymd_His') . '.idml';
-
-
-// Zapis CSV
-$fp = fopen($csvFile, 'w');
-fputcsv($fp, ['FileName', 'ContentIndex', 'OriginalText', 'TranslatedText']);
-foreach ($translated as $i => $value) {
-    fputcsv($fp, [$file[$i], $index[$i], $original[$i], $value]);
-}
-fclose($fp);
-
-// Grupowanie treści po plikach
+// 2. Grupowanie treści
 $grouped = [];
 foreach ($translated as $i => $value) {
-    $grouped[$file[$i]][] = [
-        'index' => $index[$i],
-        'text' => restoreSpacesAfterTranslation($value) // 🔹 przywróć spacje
+    if ($value === '') continue; // Skip empty
+    $grouped[$fileKeys[$i]][] = [
+        'index' => $indexKeys[$i],
+        'text' => restoreSpacesAfterTranslation($value)
     ];
 }
 
-// Zmiana treści XML
+// 3. Podmień treści w XML
 foreach ($grouped as $filename => $entries) {
-    $xmlPath = $tempPath . 'Stories/' . $filename;
+    $xmlPath = $tempDir . 'Stories/' . $filename;
     if (!file_exists($xmlPath)) continue;
 
     $dom = new DOMDocument();
-    $dom->preserveWhiteSpace = false;
-    $dom->formatOutput = true;
+    $dom->preserveWhiteSpace = true;
     $dom->load($xmlPath);
 
     $contents = $dom->getElementsByTagName('Content');
     foreach ($entries as $e) {
         $idx = (int)$e['index'];
         if (isset($contents[$idx])) {
-            $contents[$idx]->nodeValue = $e['text'];
+            $contents[$idx]->nodeValue = htmlspecialchars($e['text'], ENT_XML1);
         }
     }
 
-    // 💡 opcjonalnie: popraw spacing między Content
     $xmlString = $dom->saveXML();
-    $xmlString = preg_replace(
-        '/<\/Content>\s*<Content>(?=\p{L}|\p{N})/u',
-        '</Content> <Content>',
-        $xmlString
-    );
+    // Maintain spacing logic
+    $xmlString = preg_replace('/<\/Content>\s*<Content>(?=\p{L}|\p{N})/u', '</Content> <Content>', $xmlString);
     file_put_contents($xmlPath, $xmlString);
 }
 
-// Ustawienie folderu wyjściowego
-$originalDir = rtrim($config['output_dir'], '/\\');
-if (!is_dir($originalDir)) mkdir($originalDir, 0777, true);
-
-// Poprawienie nazwy pliku
-$originalName = pathinfo($_POST['original_idml'] ?? 'translated', PATHINFO_FILENAME);
-$originalName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $originalName);
-$suffix = '_translated';
-$outputPath = $originalDir . '/' . $originalName . $suffix . '.idml';
-
-
-// Pakowanie IDML
-$zip = new ZipArchive();
-if ($zip->open($outputPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== TRUE) {
-    die("Nie udało się utworzyć pliku IDML: $outputPath");
-}
-$dir = new RecursiveDirectoryIterator($tempPath);
-$files = new RecursiveIteratorIterator($dir);
-foreach ($files as $file) {
-    if ($file->isFile()) {
-        $realPath = $file->getRealPath();
-        $localPath = substr($realPath, strlen($tempPath));
-        $zip->addFile($realPath, ltrim($localPath, '/\\'));
+// 4. Zapakuj z powrotem — unique filename using uniqid()
+$outputFile = $outputDir . 'translated_' . uniqid() . '_' . $original_name;
+$zip = new ZipArchive;
+if ($zip->open($outputFile, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tempDir), RecursiveIteratorIterator::LEAVES_ONLY);
+    foreach ($files as $name => $file) {
+        if (!$file->isDir()) {
+            $pathOnDisk = $file->getRealPath();
+            $relativePath = substr($pathOnDisk, strlen(realpath($tempDir)) + 1);
+            $zip->addFile($pathOnDisk, $relativePath);
+        }
     }
+    $zip->close();
 }
-$zip->close();
 
+// 4.5. Aktualizacja bazy danych (JOBS)
+if ($job_id) {
+    $db = new SQLite3('users.db');
+    $stmt = $db->prepare("UPDATE jobs SET status = 'completed', output_path = :path WHERE id = :id AND user_id = :uid");
+    $stmt->bindValue(':path', $outputFile);
+    $stmt->bindValue(':id', $job_id);
+    $stmt->bindValue(':uid', $user_id);
+    $stmt->execute();
+}
 
-//print_r($_POST);
-//exit;
+// 5. Pobieranie
+header('Content-Type: application/octet-stream');
+header('Content-Disposition: attachment; filename="translated_' . $original_name . '"');
+header('Content-Length: ' . filesize($outputFile));
+readfile($outputFile);
 
-
-// Pobranie pliku
-header('Content-Type: application/zip');
-header('Content-Disposition: attachment; filename=' . basename($outputPath));
-readfile($outputPath);
 exit;

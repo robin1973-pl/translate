@@ -12,6 +12,11 @@ if ($user['role'] !== 'admin') {
     exit;
 }
 
+require_once 'helpers/i18n.php';
+$strings = require 'helpers/ui_strings.php';
+$ui_lang = get_user_language();
+$ui = $strings[$ui_lang]['admin'];
+
 // Handle actions
 if (isset($_POST['action'])) {
     if ($_POST['action'] === 'add_user') {
@@ -70,10 +75,10 @@ $log_res = $db->query("SELECT cl.*, u.username FROM credit_logs cl JOIN users u 
 while($l = $log_res->fetchArray(SQLITE3_ASSOC)) { $logs[] = $l; }
 ?>
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="<?= $ui_lang ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel - Premium Minimalist</title>
+    <title><?= $ui['title'] ?> - indd-translation.com</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -173,15 +178,15 @@ while($l = $log_res->fetchArray(SQLITE3_ASSOC)) { $logs[] = $l; }
     <div class="container-min">
         <header class="header-royal">
             <a href="dashboard.php" class="logo" style="text-decoration: none; font-size: 1.5rem;">
-                Translate.pro 
+                indd-translation.com 
                 <span style="background: var(--accent); font-size: 0.75rem; padding: 4px 12px; border-radius: 8px; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 900; letter-spacing: 0.1em; margin-left: 10px; box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);">ADMIN</span>
             </a>
-            <a href="dashboard.php" style="color: var(--text-muted); text-decoration: none; font-weight: 700; font-size: 0.9rem;"><i class="fas fa-times"></i> Zamknij</a>
+            <a href="dashboard.php" style="color: var(--text-muted); text-decoration: none; font-weight: 700; font-size: 0.9rem;"><i class="fas fa-times"></i> <?= $ui['close'] ?></a>
         </header>
 
         <div class="section-header">
-            <div class="section-title"><i class="fas fa-folder section-icon"></i> Użytkownicy systemu</div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;"><?= count($users) ?> kont aktywnych</div>
+            <div class="section-title"><i class="fas fa-folder section-icon"></i> <?= $ui['users_title'] ?></div>
+            <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;"><?= count($users) ?> <?= $ui['active_accounts'] ?></div>
         </div>
 
         <?php foreach($users as $u): ?>
@@ -207,27 +212,27 @@ while($l = $log_res->fetchArray(SQLITE3_ASSOC)) { $logs[] = $l; }
                 <form action="" method="POST" style="display:flex;">
                     <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                     <input type="hidden" name="action" value="change_password">
-                    <input type="text" name="new_password" placeholder="Hasło" id="pw-<?= $u['id'] ?>" style="display:none; width: 100px; margin-right: 5px;" class="input-min">
-                    <button type="button" onclick="let el=document.getElementById('pw-<?= $u['id'] ?>'); if(el.style.display==='none'){el.style.display='inline-block';}else{this.form.submit();}" class="action-btn" title="Resetuj hasło"><i class="fas fa-key"></i></button>
+                    <input type="text" name="new_password" placeholder="<?= $ui['password'] ?>" id="pw-<?= $u['id'] ?>" style="display:none; width: 100px; margin-right: 5px;" class="input-min">
+                    <button type="button" onclick="let el=document.getElementById('pw-<?= $u['id'] ?>'); if(el.style.display==='none'){el.style.display='inline-block';}else{this.form.submit();}" class="action-btn" title="<?= $ui['reset_password'] ?>"><i class="fas fa-key"></i></button>
                 </form>
 
-                <button class="action-btn" title="Edytuj dane"><i class="fas fa-user-edit"></i></button>
+                <button class="action-btn" title="<?= $ui['edit_data'] ?>"><i class="fas fa-user-edit"></i></button>
 
-                <form action="" method="POST" onsubmit="return confirm('Czy na pewno chcesz usunąć użytkownika <?= htmlspecialchars($u['username']) ?>?');" style="display:inline;">
+                <form action="" method="POST" onsubmit="return confirm('<?= $ui['confirm_delete'] ?> <?= htmlspecialchars($u['username'] ?? '') ?>?');" style="display:inline;">
                     <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                     <input type="hidden" name="action" value="delete_user">
-                    <button type="submit" class="action-btn delete" title="Usuń"><i class="fas fa-trash-alt"></i></button>
+                    <button type="submit" class="action-btn delete" title="<?= $ui['delete'] ?>"><i class="fas fa-trash-alt"></i></button>
                 </form>
             </div>
         </div>
         <?php endforeach; ?>
 
         <button onclick="document.getElementById('addUserModal').style.display='flex'" class="add-btn">
-            <i class="fas fa-plus-circle"></i> Dodaj nowego użytkownika do systemu
+            <i class="fas fa-plus-circle"></i> <?= $ui['add_user'] ?>
         </button>
 
         <div class="section-header">
-            <div class="section-title"><i class="fas fa-history section-icon"></i> Ostatnie operacje</div>
+            <div class="section-title"><i class="fas fa-history section-icon"></i> <?= $ui['recent_ops'] ?></div>
         </div>
         
         <div class="logs-grid">
@@ -251,24 +256,24 @@ while($l = $log_res->fetchArray(SQLITE3_ASSOC)) { $logs[] = $l; }
     <!-- MODAL -->
     <div id="addUserModal">
         <div class="modal-content">
-            <h2 style="margin-bottom: 2rem; color: var(--accent);">Nowy Użytkownik</h2>
+            <h2 style="margin-bottom: 2rem; color: var(--accent);"><?= $ui['new_user'] ?></h2>
             <form action="" method="POST">
                 <input type="hidden" name="action" value="add_user">
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">Nazwa</label>
+                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);"><?= $ui['name'] ?></label>
                     <input type="text" name="username" class="modal-input" required style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background: var(--bg-body); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 1.5rem;">
-                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">E-mail</label>
+                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);"><?= $ui['email'] ?></label>
                     <input type="email" name="email" class="modal-input" required style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background: var(--bg-body); color: var(--text-main);">
                 </div>
                 <div style="margin-bottom: 2rem;">
-                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">Hasło</label>
+                    <label style="display:block; font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);"><?= $ui['password'] ?></label>
                     <input type="password" name="password" class="modal-input" required style="width:100%; padding:12px; border-radius:12px; border:1px solid var(--card-border); background: var(--bg-body); color: var(--text-main);">
                 </div>
                 <div style="display: flex; gap: 12px;">
-                    <button type="submit" class="btn-action" style="flex: 2; padding: 12px;">Utwórz konto</button>
-                    <button type="button" onclick="document.getElementById('addUserModal').style.display='none'" class="btn-action" style="flex: 1; background: #64748b;">Anuluj</button>
+                    <button type="submit" class="btn-action" style="flex: 2; padding: 12px;"><?= $ui['create_account'] ?></button>
+                    <button type="button" onclick="document.getElementById('addUserModal').style.display='none'" class="btn-action" style="flex: 1; background: #64748b;"><?= $ui['cancel'] ?></button>
                 </div>
             </form>
         </div>

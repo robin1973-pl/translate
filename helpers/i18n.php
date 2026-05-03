@@ -1,6 +1,6 @@
 <?php
 
-function get_user_language($available_languages = ['pl', 'en', 'de']) {
+function get_user_language($available_languages = ['pl', 'en', 'de', 'cs']) {
     if (isset($_GET['lang']) && in_array($_GET['lang'], $available_languages)) {
         $_SESSION['ui_lang'] = $_GET['lang'];
         return $_GET['lang'];

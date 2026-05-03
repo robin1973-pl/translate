@@ -12,7 +12,6 @@ $config = require '../config.php';
 $data = json_decode(file_get_contents('php://input'), true);
 $text = $data['text'] ?? '';
 $targetLang = $data['targetLang'] ?? '';
-$context = $data['context'] ?? 'general';
 
 if (!$text || !$targetLang) {
     echo json_encode(['error' => 'Missing data']);
@@ -31,7 +30,7 @@ $db->exec("CREATE TABLE IF NOT EXISTS cache (
 )");
 
 // 2. Check Cache
-$hash = md5($text . '|' . $targetLang . '|' . $context);
+$hash = md5($text . '|' . $targetLang);
 $stmt = $db->prepare("SELECT translated FROM cache WHERE hash = :h");
 $stmt->bindValue(':h', $hash);
 $result = $stmt->execute();
@@ -47,27 +46,17 @@ if ($cached) {
 
 // 3. Call OpenAI if not in cache
 try {
-    $systemPrompts = [
-        'general' => "You are a professional translator. Translate accurately into $targetLang. Preserve all technical symbols like °, ², ³, ₀, ₁, ₂, ₊, ⁻.",
-        'tech' => "You are a technical DTP translator. Focus on engineering precision, units, and DMX terminology. Preserve symbols like °, ², ³, ₀, ₁. Do not translate DMX channel names (CH 1, SL 1).",
-        'marketing' => "You are a creative marketing translator. Translate into natural, persuasive, and engaging $targetLang. Adapt slogans and emotional tone while keeping DTP tokens intact.",
-        'legal' => "You are a legal translator. Use formal, strictly literal terminology in $targetLang. Ensure exact meanings of terms like 'shall', 'notwithstanding', etc.",
-        'lit' => "You are a literary translator. Focus on flow, mood, and artistic expression in $targetLang while preserving DTP formatting tokens."
-    ];
-
-    $prompt = $systemPrompts[$context] ?? $systemPrompts['general'];
-
     $ch = curl_init('https://api.openai.com/v1/chat/completions');
     $payload = json_encode([
         'model' => 'gpt-4o',
         'messages' => [
             [
                 'role' => 'system',
-                'content' => $prompt
+                'content' => "You are a professional translator. Translate accurately into $targetLang. Preserve all technical symbols like °, ², ³, ₀, ₁, ₂, ₊, ⁻. Do not translate DMX channel names (CH 1, SL 1)."
             ],
             ['role' => 'user', 'content' => "Translate this into $targetLang:\n\n$text"]
         ],
-        'temperature' => ($context == 'marketing' || $context == 'lit') ? 0.6 : 0.3
+        'temperature' => 0.3
     ]);
 
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

@@ -1,7 +1,8 @@
 <?php
 session_start();
+require_once 'helpers/i18n.php';
 $strings = require 'helpers/ui_strings.php';
-$ui_lang = 'pl';
+$ui_lang = get_user_language();
 $ui = $strings[$ui_lang]['register'];
 
 $message = '';
@@ -30,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $message = $ui['success'];
             } else {
-                $message = "Błąd zapisu.";
+                $message = $ui['error_save'];
                 $is_error = true;
             }
         }
@@ -101,6 +102,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="register-card">
+        <div style="display: flex; justify-content: center; gap: 12px; margin-bottom: 1.5rem;">
+            <a href="?lang=pl" title="Polski" style="text-decoration: none; font-size: 1.2rem;">🇵🇱</a>
+            <a href="?lang=en" title="English" style="text-decoration: none; font-size: 1.2rem;">🇬🇧</a>
+            <a href="?lang=de" title="Deutsch" style="text-decoration: none; font-size: 1.2rem;">🇩🇪</a>
+            <a href="?lang=cs" title="Čeština" style="text-decoration: none; font-size: 1.2rem;">🇨🇿</a>
+        </div>
         <h2><?= $ui['title'] ?></h2>
         
         <?php if ($message): ?>
@@ -110,12 +117,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST">
-            <input type="text" name="username" placeholder="Nazwa użytkownika" required>
-            <input type="password" name="password" placeholder="Hasło" required>
+            <input type="text" name="username" placeholder="<?= $ui['user_placeholder'] ?>" required>
+            <input type="password" name="password" placeholder="<?= $ui['pass_placeholder'] ?>" required>
             <button type="submit"><?= $ui['submit'] ?></button>
         </form>
         
-        <a href="login.php" class="back-link">Masz już konto? Zaloguj się</a>
+        <a href="login.php" class="back-link"><?= $ui['have_account'] ?></a>
     </div>
 
     <script>

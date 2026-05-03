@@ -1,5 +1,7 @@
-<?php
-session_start();
+require_once 'helpers/i18n.php';
+$strings = require 'helpers/ui_strings.php';
+$ui_lang = get_user_language();
+$ui = $strings[$ui_lang]['reset'];
 $db = new SQLite3(__DIR__ . '/users.db');
 
 $token = $_GET['token'] ?? '';
@@ -12,7 +14,7 @@ $stmt->bindValue(':t', $token);
 $user = $stmt->execute()->fetchArray(SQLITE3_ASSOC);
 
 if (!$user) {
-    die("Link jest nieprawidłowy lub wygasł.");
+    die($ui['error_link']);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -20,25 +22,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirm = $_POST['confirm_password'] ?? '';
 
     if ($pass !== $confirm) {
-        $error = "Hasła nie są identyczne.";
+        $error = $ui['error_mismatch'];
     } elseif (strlen($pass) < 6) {
-        $error = "Hasło musi mieć co najmniej 6 znaków.";
+        $error = $ui['error_short'];
     } else {
         $hash = password_hash($pass, PASSWORD_DEFAULT);
         $stmt = $db->prepare("UPDATE users SET password = :p, reset_token = NULL, reset_expires = NULL WHERE id = :id");
         $stmt->bindValue(':p', $hash);
         $stmt->bindValue(':id', $user['id']);
         $stmt->execute();
-        $success = "Hasło zostało zmienione. Możesz się teraz zalogować.";
+        $success = $ui['success'];
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="<?= $ui_lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ustaw nowe hasło - Translate.pro</title>
+    <title><?= $ui['title'] ?> - INDD Translation</title>
     <link rel="stylesheet" href="assets/css/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -122,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="login-card">
-        <div class="logo">TRANSLATE.PRO</div>
-        <h2 style="font-size: 1.4rem; margin-bottom: 2rem; color: var(--text-main); font-weight: 800;">Nowe hasło</h2>
+        <div class="logo">INDD TRANSLATION</div>
+        <h2 style="font-size: 1.4rem; margin-bottom: 2rem; color: var(--text-main); font-weight: 800;"><?= $ui['title'] ?></h2>
 
         <?php if ($error): ?>
             <div class="alert-error"><?= $error ?></div>
@@ -131,18 +133,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <?php if ($success): ?>
             <div class="alert-success"><?= $success ?></div>
-            <a href="login.php" class="btn-primary" style="display: block; text-decoration: none;">Zaloguj się</a>
+            <a href="login.php" class="btn-primary" style="display: block; text-decoration: none;"><?= $ui['login_btn'] ?></a>
         <?php else: ?>
             <form method="POST">
                 <div class="form-group">
-                    <label class="form-label">NOWE HASŁO</label>
+                    <label class="form-label"><?= $ui['pass_label'] ?></label>
                     <input type="password" name="password" class="form-control" placeholder="••••••••" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">POTWIERDŹ HASŁO</label>
+                    <label class="form-label"><?= $ui['confirm_label'] ?></label>
                     <input type="password" name="confirm_password" class="form-control" placeholder="••••••••" required>
                 </div>
-                <button type="submit" class="btn-primary">Zmień hasło</button>
+                <button type="submit" class="btn-primary"><?= $ui['submit'] ?></button>
             </form>
         <?php endif; ?>
     </div>

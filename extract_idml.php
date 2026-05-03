@@ -153,7 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['idml'])) {
     fclose($fp);
 
     // Przekieruj do interfejsu tłumaczeń
-    header("Location: translate_ui.php?lang=$lang&original_idml=" . urlencode($uploadName));
+    $job_id = $db->lastInsertRowID();
+    header("Location: translate_ui.php?lang=$lang&job_id=$job_id&original_idml=" . urlencode($uploadName));
     exit;
 
 }
